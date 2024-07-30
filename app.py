@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
@@ -8,6 +9,7 @@ import requests
 from io import StringIO
 
 app = Flask(__name__)
+CORS(app)
 
 # URLs de los archivos CSV
 csv_urls = [
@@ -131,19 +133,30 @@ def get_stats(home_team, away_team):
 
     return stats
 
-@app.route('/predict', methods=['POST'])
+@app.route('/')
+def home():
+    return "Welcome to the Predicción de Fútbol API"
+
+@app.route('/test', methods=['GET'])
+def test():
+    return "API is working!"
+
+@app.route('/predict', methods=['GET', 'POST'])
 def predict():
-    data = request.json
-    home_team = data['home_team']
-    away_team = data['away_team']
-    model = data.get('model', 'ia')  # 'ia' o 'estadistico'
-    
-    if model == 'ia':
-        results = get_stats_and_predict_ia(home_team, away_team)
+    if request.method == 'POST':
+        data = request.json
+        home_team = data['home_team']
+        away_team = data['away_team']
+        model = data.get('model', 'ia')  # 'ia' o 'estadistico'
+        
+        if model == 'ia':
+            results = get_stats_and_predict_ia(home_team, away_team)
+        else:
+            results = get_stats(home_team, away_team)
+        
+        return jsonify(results)
     else:
-        results = get_stats(home_team, away_team)
-    
-    return jsonify(results)
+        return "Use POST method to get predictions"
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
